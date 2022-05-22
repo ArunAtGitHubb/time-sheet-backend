@@ -6,9 +6,21 @@ header("Access-Control-Allow-Origin:*");
 
 $json = array();
 
-$findCommand = $fm->newFindCommand('PHP__CON');
 
 $method = $_SERVER["REQUEST_METHOD"];
+
+function getUserName($userId){
+    global $fm;
+    $findCommand = $fm->newFindCommand('PHP__USR');
+    $findCommand->addFindCriterion('__kp__UserId__lsan','=='.$userId);
+    try{
+        $result = $findCommand->execute();
+        $records = $result->getRecords();
+        $user = $records[0] -> getField('User_name');
+        return $user;
+    }catch(Exception $ex){
+    }
+}
 
 switch($method){
     // case "POST":
@@ -20,16 +32,17 @@ switch($method){
             //  echo ExecuteSQL ( "SELECT Department FROM Employees WHERE EmpID = 1", "", "" );
         // break;
     case "GET":
-
+        
         $require = $_GET["require"];
-
+        
         switch ($require) {
             
             case 'login':
-
+                
                 $username = $_GET["username"];
                 $password = $_GET["password"];
-               
+                
+                $findCommand = $fm->newFindCommand('PHP__CON');
                 
                 $findCommand->addFindCriterion('Username','=='.$username);
                 $result = $findCommand->execute();
@@ -102,19 +115,19 @@ switch($method){
                 $records = $result -> getRecords();
                 // print_r($records);
                 // $count = count($records);
-                foreach($records as $record)
-                    {
-                        $rqstId = $record -> getField('__kp__RqstId__lsan');
-                        $rqstPrj = $record -> getField('IsActive');
-                        $recieved = $record -> getField('Date_recieved');
-                        $target = $record -> getField('Date_target');
-                        $name = $record -> getField('Name');
-                        $des = $record -> getField('Description');
-                        $statusId = $record -> getField('IsActive');
-                        $assign = $record -> getField('_kf__UserId__recievedby__lsxn');
-                        $statusid = $record -> getField('_kf_Tsk_StatusId__lsxn');
-                        $duration = $record -> getField('Worked_Duration');
-                        $assigns = array();
+                $count = count($records) > 5 ? 5 : count($records);
+                for ($i=0; $i < $count; $i++){
+                    $rqstId = $records[$i] -> getField('__kp__RqstId__lsan');
+                    $rqstPrj = $records[$i] -> getField('IsActive');
+                    $recieved = $records[$i] -> getField('Date_recieved');
+                    $target = $records[$i] -> getField('Date_target');
+                    $name = $records[$i] -> getField('Name');
+                    $des = $records[$i] -> getField('Description');
+                    $statusId = $records[$i] -> getField('IsActive');
+                    $assign = $records[$i] -> getField('_kf__UserId__recievedby__lsxn');
+                    $statusid = $records[$i] -> getField('_kf_Tsk_StatusId__lsxn');
+                    $duration = $records[$i] -> getField('Worked_Duration');
+                    $assigns = array();
 
                     switch ($statusId) {
                         case '1':
@@ -146,71 +159,11 @@ switch($method){
                     $assignees = explode("\n", $assign);
 
                     foreach($assignees as $assignee){
-                        switch($assignee){
-                            case '230':
-                                $assign = 'AB';
-                            break;
-                            case '246':
-                                $assign = 'ADM';
-                            break;
-                            case '264':
-                                $assign = 'BB';
-                            break;
-                            case '270':
-                                $assign = 'CM';
-                            break;
-                            case '':
-                                $assign = 'DB';
-                            break;
-                            case '':
-                                $assign = 'DS';
-                            break;
-                            case '':
-                                $assign = 'FB';
-                            break;
-                            case '':
-                                $assign = 'HM';
-                            break;
-                            case '':
-                                $assign = 'JJ';
-                            break;
-                            case '':
-                                $assign = 'JR';
-                            break;
-                            case '':
-                                $assign = 'KK';
-                            break;
-                            case '':
-                                $assign = 'KR';
-                            break;
-                            case '':
-                                $assign = 'KS';
-                            break;
-                            case '':
-                                $assign = 'LP';
-                            break;
-                            case '':
-                                $assign = 'LS';
-                            break;
-                            case '':
-                                $assign = 'MN';
-                            break;
-                            case '':
-                                $assign = 'MS';
-                            break;
-                            case '':
-                                $assign = 'SA';
-                            break;
-                            case '':
-                                $assign = 'SP';
-                            break;
-                            case '':
-                                $assign = 'VA';
-                            break;
+                        $userName = getUserName($assignee);
+                        if(!in_array($userName, $assigns)){
+                            array_push($assigns, $userName);
                         }
-                        array_push($assigns, $assign);
                     }
-
 
                     $temp = [
                         'id' => $rqstId,
@@ -241,13 +194,14 @@ switch($method){
                 $records = $result->getRecords();
                 foreach($records as $record){
                     $status = $record -> getField('IsActive');
+                    $assign = $record -> getField('_kf__UserId__recievedby__lsxn');
                     $relatedSet = $record->getRelatedSet('rqst__TSK');
                     foreach ($relatedSet as $relatedRow){
                         $taskid = $relatedRow->getField('rqst__TSK::__kp__TskId__lsan');
                         $daterecvd = $relatedRow->getField('rqst__TSK::Date_Recevied');
                         $datedue = $relatedRow->getField('rqst__TSK::Date_Due');
                         $desc = $relatedRow->getField('rqst__TSK::description');
-                        $assign = $relatedRow -> getField('rqst__TSK::_kf__UsrId__lsxn__AssginedTo');
+                        // $assign = $relatedRow -> getField('rqst__TSK::_kf__UsrId__lsxn__AssginedTo');
                         $ex_duration = $relatedRow->getField('rqst__TSK::Duration_expected');
                         $worked_duration = $relatedRow->getField('rqst__TSK::Duration_worked');
                         $statusId = $relatedRow->getField('rqst__TSK::_kf_Tsk_StatusId__lsxn');
@@ -279,6 +233,15 @@ switch($method){
                             break;
                         }
 
+                        $assignees = explode("\n", $assign);
+                        $userNames = array();
+                        foreach($assignees as $assignee){
+                            $userName = getUserName($assignee);
+                            if(!in_array($userName, $userNames)){
+                                array_push($userNames, $userName);
+                            }
+                        }
+
                         $temp = [
                             'id' => "$taskid",
                             'dueDate' => "$ex_duration",
@@ -288,7 +251,7 @@ switch($method){
                                 'msg' => $status,
                                 'color' => $color,
                             ],
-                            'assign' => $assign,
+                            'assign' => $userNames,
                             'task' => "$desc",
                             'duration' => "$worked_duration",
                             'statusId' => "$statusId"
@@ -298,21 +261,6 @@ switch($method){
                 }
                 echo json_encode($data);
             break;
-            case 'screen': 
-                $reqId = $_GET["reqId"];
-                $screenShots = array();
-                $findCommand = $fm->newFindCommand('PHP__SCREENSHOT');
-                $findCommand->addFindCriterion('_kf__RqstId__lsxn','=='.$reqId);
-                $result = $findCommand->execute();
-                $records = $result->getRecords();
-                foreach($records as $record){
-                    $temp = [
-                        'id' => $record -> getField("__kp__IdleScreenShotId__lsan")
-                    ];
-                    array_push($screenShots, $temp);
-                }
-                echo json_encode($screenShots);
-            break;
             case 'work':
                 $data = array();
                 $taskid = $_GET["taskid"];
@@ -320,26 +268,43 @@ switch($method){
                 $findCommand->addFindCriterion('_kf__TskId__lsxn','=='.$taskid);
                 $result = $findCommand->execute();
                 $records = $result->getRecords();
-                $count = count($records) > 5 ? 5 : count($records);
-                for ($i=0; $i < $count; $i++) {
-                    $temp = [
-                        "Date" => $records[$i] -> getField("Dte"),
-                        "Duration" => $records[$i] -> getField("Duration"),
-                        "Description" => $records[$i] -> getField("Libellé travail")
-                    ];
-                    array_push($data, $temp);
-                }
+                // $count = count($records) > 5 ? 5 : count($records);
+                foreach($records as $record)
+                {
+                    $projName = $record -> getField('Proj_name');
+                    $duration = $record -> getField('Duration');
+                    $date = $record -> getField('Dte');
+                    $description = $record -> getField('Libellé travail');
+                    $userId = $record -> getField('_kf__UserId__lsxn');
+                    $start = $record -> getField('Time_start_time_calc');
+                    $end = $record -> getField('Time_end_time_calc');
+                    $findCommand->addFindCriterion('_kf__UserId__lsxn','=='.$userId);
+                    $resultUser = $findCommand->execute();
+                    $recordsUser = $resultUser->getRecords();
+                        $temp = [
+                            'ProjectName' => $projName,
+                            'userName' => getUserName($userId),
+                            'Duration' => $duration,
+                            'Date' => $date,
+                            'startTime' => $start,
+                            'endTime' => $end,
+                            'totalHours' => $recordsUser[0] -> getField('zz__STATS__Duration'),
+                            'Description' => $description
+                        ];
+                        array_push($data,$temp);
+                    }
+                
                 echo json_encode($data);
             break;
-            case 'taskscreen':
+            case 'screen': 
                 $data = array();
-                $taskId = $_GET["taskId"];
-                $findCommand = $fm->newFindCommand('PHP__SCREENSHOT');
-                $findCommand->addFindCriterion('_kf__TskId__lsxn','=='.$taskId);
+                $reqId = $_GET["reqId"];
+                $findCommand = $fm->newFindCommand('PHP__RANDOM_SCREENSHOT');
+                $findCommand->addFindCriterion('_kf__RqstId__lsxn','=='.$reqId);
                 $result = $findCommand->execute();
                 $records = $result->getRecords();
                 foreach($records as $record){
-                    $id = $record -> getField("__kp__IdleScreenShotId__lsan");
+                    $id = $record -> getField('__kp_RandomScreenshotId_lsan');
                     $temp = [
                         'id' => $id
                     ];
@@ -347,7 +312,31 @@ switch($method){
                 }
                 echo json_encode($data);
             break;
+
+            case 'taskscreen':
+                $data = array();
+                $taskId = $_GET["taskId"];
+                $findCommand = $fm->newFindCommand('PHP__RANDOM_SCREENSHOT');
+                $findCommand->addFindCriterion('_kf__TskId__lsan','=='.$taskId);
+                $result = $findCommand->execute();
+                $records = $result->getRecords();
+                foreach($records as $record){
+                    $id = $record -> getField('__kp_RandomScreenshotId_lsan');
+                    $temp = [
+                        'id' => $id
+                    ];
+                    array_push($data, $temp);
+                }
+                echo json_encode($data);
+            break;
+            case 'user':
+                $data =array();
+                $userId = $_GET["userId"];
+                    $temp = [
+                        'UserName' => getUserName($userId)
+                    ];
+                    echo json_encode($temp);
+            break;
+            }
         }
-    }
-    
     ?>
